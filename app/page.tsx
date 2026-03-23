@@ -34,27 +34,36 @@ export default function Home() {
   }, []);
 
   const guardar = async () => {
-    if (!nombre || !email) {
-      alert("Completá nombre y email");
+  if (!nombre || !email) {
+    alert("Completá nombre y email");
+    return;
+  }
+
+  if (editandoId) {
+    const { error } = await supabase
+      .from("usuarios")
+      .update({
+        nombre,
+        email,
+        telefono,
+        idea,
+        senia,
+        estado,
+      })
+      .eq("id", editandoId);
+
+    if (error) {
+      console.log("ERROR UPDATE:", error);
+      alert("Error al editar: " + error.message);
       return;
     }
 
-    if (editandoId) {
-      await supabase
-        .from("usuarios")
-        .update({
-          nombre,
-          email,
-          telefono,
-          idea,
-          senia,
-          estado,
-        })
-        .eq("id", editandoId);
-
-      setEditandoId(null);
-    } else {
-      await supabase.from("usuarios").insert([
+    alert("Cliente editado");
+    setEditandoId(null);
+  } else {
+    const { data, error } = await supabase
+      .from("usuarios")
+      .insert([
         {
           nombre,
           email,
@@ -63,13 +72,28 @@ export default function Home() {
           senia,
           estado,
         },
-      ]);
+      ])
+      .select();
+
+    if (error) {
+      console.log("ERROR INSERT:", error);
+      alert("Error al guardar: " + error.message);
+      return;
     }
 
-    limpiarFormulario();
-    obtenerUsuarios();
-  };
+    console.log("INSERT OK:", data);
+    alert("Cliente guardado");
+  }
 
+  setNombre("");
+  setEmail("");
+  setTelefono("");
+  setIdea("");
+  setSenia("");
+  setEstado("pendiente");
+
+  obtenerUsuarios();
+};
   const eliminarUsuario = async (id: string) => {
     await supabase.from("usuarios").delete().eq("id", id);
     obtenerUsuarios();
